@@ -1,0 +1,49 @@
+[project]
+name = "ml_ops_project"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.116.1",
+    "joblib>=1.5.1",
+    "matplotlib>=3.10.5",
+    "numpy>=2.3.2",
+    "pandas>=2.3.1",
+    "pydantic>=2.11.7",
+    "requests>=2.32.4",
+    "scikit-learn>=1.7.1",
+    "seaborn>=0.13.2",
+    "streamlit>=1.48.1",
+    "uvicorn>=0.35.0",
+]
+
+# Ruff
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["notebooks/**"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # import sorting rule
+
+# Black
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+extend-exclude = "notebooks/"
+
+# isort
+[tool.isort]
+profile = "black"
+skip_glob = ["notebooks/*"]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.9",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "isort", "black", "pytest", "pytest-cov"]
