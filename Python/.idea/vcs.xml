@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$/.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/SOCAR_Hackhathon/HackathonOCR" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Software_Engineering/ResumeMatcher" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Software_Engineering/project/hh_resume_job_match_engine" vcs="Git" />
   </component>
 </project>
