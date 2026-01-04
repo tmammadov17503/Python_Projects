@@ -1,0 +1,45 @@
+node_id,name,building,floor,x,y,accessible
+E001,"Laboratory 001",E,-1,10,30,1
+E002,"Laboratory 002",E,-1,20,30,1
+E003,"Laboratory 003",E,-1,28,28,1
+E103,"Small Case 103",E,1,10,30,1
+E104,"Small Case 104",E,1,15,30,1
+E105,"Small Case 105",E,1,20,30,1
+E106,"Small Case 106",E,1,25,30,1
+E107,"Small Case 107",E,1,28,30,1
+E111,"Medium Case 111",E,1,10,28,1
+E112,"Medium Case 112",E,1,18,28,1
+E125,"Large 125",E,1,28,28,1
+E203,"Small Case 203",E,2,10,28,1
+E204,"Small Case 204",E,2,15,28,1
+E205,"Small Case 205",E,2,22,28,1
+E206,"Small Case 206",E,2,28,28,1
+E207,"Small Case 207",E,2,10,26,1
+E211,"Medium Case 211",E,2,15,26,1
+E212,"Medium Case 212",E,2,25,26,1
+E403,"Small Case 403",E,4,10,28,1
+E404,"Small Case 404",E,4,18,28,1
+E405,"Small Case 405",E,4,22,28,1
+E406,"Small Case 406",E,4,28,28,1
+E407,"Small Case 407",E,4,10,24,1
+E411,"Medium Case 411",E,4,15,24,1
+E412,"Medium Case 412",E,4,22,24,1
+TOILET_E1,"Toilet E-1",E,-1,25,18,1
+TOILET_E2,"Toilet E-2",E,1,25,18,1
+TOILET_E3,"Toilet E-3",E,2,25,18,1
+TOILET_E4,"Toilet E-4",E,3,25,18,1
+STAIRS_E1,"Stairs E1",E,-1,18,25,1
+STAIRS_E2,"Stairs E2",E,1,18,25,1
+STAIRS_E3,"Stairs E3",E,2,18,25,1
+STAIRS_E4,"Stairs E4",E,3,18,25,1
+ELEV_A_E1,"Elevator A E1",E,-1,12,28,1
+ELEV_B_E1,"Elevator B E1",E,-1,30,25,1
+ELEV_A_E2,"Elevator A E2",E,1,12,28,1
+ELEV_B_E2,"Elevator B E2",E,1,30,25,1
+ELEV_A_E3,"Elevator A E3",E,2,12,28,1
+ELEV_B_E3,"Elevator B E3",E,2,30,25,1
+ELEV_A_E4,"Elevator A E4",E,3,12,28,1
+ELEV_B_E4,"Elevator B E4",E,3,30,25,1
+STAIRS_E5,"Stairs E5 (Floor 4)",E,4,18,25,1
+ELEV_A_E5,"Elevator A E5",E,4,12,28,1
+ELEV_B_E5,"Elevator B E5",E,4,30,25,1

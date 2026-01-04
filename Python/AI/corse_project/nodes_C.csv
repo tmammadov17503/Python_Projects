@@ -1,0 +1,11 @@
+node_id,name,building,floor,x,y,accessible
+C101,"Auditorium",C,1,10,30,1
+C205,"Classroom 205",C,2,15,28,1
+C206,"Classroom 206",C,2,20,28,1
+CANTEEN,"Canteen",C,1,18,20,1
+TOILET_C1,"Toilet 1",C,1,10,18,1
+TOILET_C2,"Toilet 2",C,2,10,18,1
+STAIRS_C1,"Stairs 1",C,1,18,24,1
+ELEV_A_C1,"Elevator A C1",C,1,12,28,1
+STAIRS_C2,"Stairs 2",C,2,18,24,1
+ELEV_A_C2,"Elevator A C2",C,2,12,28,1

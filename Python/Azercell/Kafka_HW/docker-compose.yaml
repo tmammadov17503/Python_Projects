@@ -9,7 +9,7 @@ services:
     container_name: kafka1
     image: telco_kafka:latest
     build:
-      context: .
+      context: ../../../../Documents/ADA/Azercell/HWs/kafka
     ports:
         - "9192:9192"
         - "9094:9092"
@@ -17,13 +17,13 @@ services:
       kafka-net:
         ipv4_address: 172.20.0.11
     volumes:
-    - ./config/kafka1/server.properties:/kafka/config/server.properties
-    - ./data/kafka1/:/data/kafka/
+      - ./config/kafka1:/kafka/config
+      - ./data/kafka1/:/data/kafka/
   kafka2:
     container_name: kafka2
     image: telco_kafka:latest
     build:
-      context: .
+      context: ../../../../Documents/ADA/Azercell/HWs/kafka
     ports:
         - "9193:9192"
         - "9095:9092"
@@ -31,13 +31,13 @@ services:
       kafka-net:
         ipv4_address: 172.20.0.12
     volumes:
-    - ./config/kafka2/server.properties:/kafka/config/server.properties
-    - ./data/kafka2/:/data/kafka/
+      - ./config/kafka2:/kafka/config
+      - ./data/kafka2/:/data/kafka/
   kafka3:
     container_name: kafka3
     image: telco_kafka:latest
     build:
-      context: .
+      context: ../../../../Documents/ADA/Azercell/HWs/kafka
     ports:
         - "9194:9192"
         - "9096:9092"
@@ -45,8 +45,8 @@ services:
       kafka-net:
         ipv4_address: 172.20.0.13
     volumes:
-    - ./config/kafka3/server.properties:/kafka/config/server.properties
-    - ./data/kafka3/:/data/kafka/
+      - ./config/kafka3:/kafka/config
+      - ./data/kafka3/:/data/kafka/
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
@@ -62,3 +62,16 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka1:9192
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    networks:
+      kafka-net:
+        ipv4_address: 172.20.0.15
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:9192,kafka2:9192,kafka3:9192
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081

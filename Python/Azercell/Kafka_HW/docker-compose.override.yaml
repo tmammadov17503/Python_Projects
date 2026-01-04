@@ -1,0 +1,30 @@
+services:
+  kafka1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: telco_kafka:latest
+    volumes:
+      - type: bind
+        source: ./kafka1
+        target: /kafka/config
+
+  kafka2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: telco_kafka:latest
+    volumes:
+      - type: bind
+        source: ./kafka2
+        target: /kafka/config
+
+  kafka3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: telco_kafka:latest
+    volumes:
+      - type: bind
+        source: ./kafka3
+        target: /kafka/config

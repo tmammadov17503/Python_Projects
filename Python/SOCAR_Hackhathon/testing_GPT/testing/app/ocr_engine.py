@@ -1,7 +1,13 @@
 import cv2
 import numpy as np
 import pytesseract
-from paddleocr import PaddleOCR
+try:
+    from paddleocr import PaddleOCR
+    _PADDLE_ERR = None
+except Exception as e:
+    PaddleOCR = None
+    _PADDLE_ERR = str(e)
+
 from pdf2image import convert_from_bytes
 import os
 import re
@@ -9,12 +15,22 @@ import re
 
 class OCREngine:
     def __init__(self):
-        print("Initializing OCR Engines (Final Stable Mode)...")
+        print("Initializing OCR Engines (Seismic Blob Detection Mode)...")
 
-        # 1. PaddleOCR (Standard)
-        # We use 'en' and 'ru' base models.
-        self.ocr_lat = PaddleOCR(lang='en', use_angle_cls=False)
-        self.ocr_cyr = PaddleOCR(lang='ru', use_angle_cls=False)
+        # 1) PaddleOCR (optional; don't let it crash the app)
+        if PaddleOCR is None:
+            print(f"⚠️ PaddleOCR disabled (import failed): {_PADDLE_ERR}")
+            self.ocr_lat = None
+            self.ocr_cyr = None
+        else:
+            try:
+                self.ocr_lat = PaddleOCR(lang='en', use_angle_cls=False)
+                self.ocr_cyr = PaddleOCR(lang='ru', use_angle_cls=False)
+                print("✅ PaddleOCR READY.")
+            except Exception as e:
+                print(f"⚠️ PaddleOCR init failed: {e}")
+                self.ocr_lat = None
+                self.ocr_cyr = None
 
         # 2. Tesseract Setup
         self.use_tesseract = False
@@ -74,11 +90,74 @@ class OCREngine:
 
         return cleaned
 
-    def process_pdf(self, pdf_bytes: bytes, mode: str = "auto") -> list:
+    def preprocess_text_page(self, gray):
+        # upscale (helps small italic text)
+        gray = cv2.resize(gray, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
+
+        # denoise
+        gray = cv2.fastNlMeansDenoising(gray, None, h=10, templateWindowSize=7, searchWindowSize=21)
+
+        # illumination correction (remove yellow paper background)
+        bg = cv2.medianBlur(gray, 31)
+        norm = cv2.divide(gray, bg, scale=255)
+
+        # boost local contrast
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        norm = clahe.apply(norm)
+
+        # adaptive threshold
+        th = cv2.adaptiveThreshold(
+            norm, 255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY,
+            35, 15
+        )
+
+        # remove horizontal notebook lines
+        horiz_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (80, 1))
+        horiz = cv2.morphologyEx(th, cv2.MORPH_OPEN, horiz_kernel)
+        # horiz keeps the lines as black(0). Turn them to white(255) in th:
+        th[horiz == 0] = 255
+
+        return th
+
+    def tesseract_with_conf(self, img, lang_str, psm):
+        config = f"--oem 1 --psm {psm}"
+        data = pytesseract.image_to_data(img, lang=lang_str, config=config, output_type=pytesseract.Output.DICT)
+        confs = []
+        for c in data.get("conf", []):
+            try:
+                v = float(c)
+                if v >= 0:
+                    confs.append(v)
+            except:
+                pass
+        avg_conf = sum(confs) / len(confs) if confs else 0.0
+        text = pytesseract.image_to_string(img, lang=lang_str, config=config)
+        return text, avg_conf
+
+    def pick_best_text(self, candidates):
+        # candidates: [(text, conf), ...]
+        def score(text, conf):
+            t = (text or "").strip()
+            letters = re.findall(r"[a-zA-ZəöüğıçşƏÖÜĞIÇŞ]", t)
+            letter_ratio = (len(letters) / max(1, len(re.sub(r"\s", "", t))))
+            return conf * 2.0 + letter_ratio * 100.0 + min(len(t), 500) / 50.0
+
+        best = ("", 0.0)
+        best_s = -1e9
+        for text, conf in candidates:
+            s = score(text, conf)
+            if s > best_s:
+                best_s = s
+                best = (text, conf)
+        return best
+
+    def process_pdf(self, pdf_bytes: bytes, mode: str = "lat") -> list:
         # DPI=200 is optimal for Tesseract speed/accuracy
         images = convert_from_bytes(
             pdf_bytes,
-            dpi=200,
+            dpi=300,
             poppler_path=r"C:\Program Files\poppler-25.12.0\Library\bin"
         )
 
@@ -97,9 +176,19 @@ class OCREngine:
                     img_np = cv2.resize(img_np, None, fx=scale, fy=scale)
 
                 # 2. Try PaddleOCR first
-                engine = self.ocr_cyr if mode == "cyr" else self.ocr_lat
-                ocr_result = engine.ocr(img_np)
-                md_text = self._parse_result_deep(ocr_result)
+                md_text = ""
+
+                if self.ocr_lat is not None:
+                    engine = self.ocr_cyr if mode == "cyr" else self.ocr_lat
+                    try:
+                        ocr_result = engine.ocr(img_np)
+                        md_text = self._parse_result_deep(ocr_result)
+                    except Exception as e:
+                        print(f"  > PaddleOCR failed on page {page_num}: {e}")
+                        md_text = ""
+                else:
+                    # PaddleOCR disabled; we'll rely on Tesseract fallback below
+                    md_text = ""
 
                 # 3. Check for Garbage (Seismic Lines misread as text)
                 clean_sample = re.sub(r'[\s0-9]', '', md_text)
@@ -111,22 +200,41 @@ class OCREngine:
                 is_weak = len(md_text.strip()) < 50
 
                 # 4. Fallback: Seismic Map Processor
+                # 4) Fallback (TEXT pages first, blob isolation last)
                 if (is_weak or garbage_ratio > 0.4) and self.use_tesseract:
-                    print(f"  > Map detected (Garbage Ratio: {garbage_ratio:.2f}). Running Blob Isolation...")
 
-                    lang_str = "aze+eng" if mode == "lat" else "aze_cyrl+rus+eng"
+                    # Choose language safely
+                    if mode == "cyr":
+                        lang_str = "aze_cyrl+rus+eng" if "aze_cyrl" in self.langs_available else "rus+eng"
+                    else:
+                        lang_str = "aze+eng" if "aze" in self.langs_available else "eng"
 
-                    # Convert to Gray & Isolate Text Regions
                     gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-                    cleaned_img = self.isolate_text_regions(gray)
 
-                    # FIX: STRICT WHITELIST WITHOUT SPACES OR QUOTES
-                    # This prevents the "No closing quotation" error
-                    whitelist = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZəöüğıçşƏÖÜĞIÇŞ.,-:/()"
-                    config = f'--oem 3 --psm 11 -c tessedit_char_whitelist={whitelist}'
+                    # ---- A) TEXT-PAGE preprocessing + best-PSM selection ----
+                    th = self.preprocess_text_page(gray)
 
-                    tess_text = pytesseract.image_to_string(cleaned_img, lang=lang_str, config=config)
-                    md_text = tess_text
+                    candidates = []
+                    for psm in (6, 4, 3):
+                        txt, conf = self.tesseract_with_conf(th, lang_str, psm)
+                        candidates.append((txt, conf))
+
+                    best_txt, best_conf = self.pick_best_text(candidates)
+                    md_text = best_txt
+                    print(f"  > Tesseract(TEXT) best avg_conf={best_conf:.1f} (lang={lang_str})")
+
+                    # ---- B) Only if still weak: try blob isolation as LAST resort ----
+                    if len(md_text.strip()) < 60:
+                        print("  > Still weak. Trying Blob Isolation (last resort)...")
+                        cleaned_img = self.isolate_text_regions(gray)
+
+                        # IMPORTANT: no whitelist while debugging (whitelist often hurts OCR)
+                        txt2, conf2 = self.tesseract_with_conf(cleaned_img, lang_str, 11)
+
+                        # Keep whichever is better
+                        if conf2 > best_conf and len(txt2.strip()) > len(md_text.strip()):
+                            md_text = txt2
+                            print(f"  > Blob Isolation improved avg_conf={conf2:.1f}")
 
                 # 5. Final Filter
                 md_text = self.filter_garbage_lines(md_text)

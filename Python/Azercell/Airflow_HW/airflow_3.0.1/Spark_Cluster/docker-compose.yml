@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  spark-master:
+    image: bitnami/spark:3.5.0
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - PYSPARK_PYTHON=/usr/bin/python3
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+    ports:
+      - "7077:7077"   # Spark Master RPC
+      - "8080:8080"   # Spark Master UI
+    volumes:
+      - ../data:/opt/spark-data
+    networks: [spark-net]
+
+  spark-worker-1:
+    image: bitnami/spark:3.5.0
+    container_name: spark-worker-1
+    depends_on: [spark-master]
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=1
+      - PYSPARK_PYTHON=/usr/bin/python3
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3
+    ports:
+      - "8081:8081"   # Worker UI (optional)
+    volumes:
+      - ../data:/opt/spark-data
+    networks: [spark-net]
+
+networks:
+  spark-net:
+    external: true

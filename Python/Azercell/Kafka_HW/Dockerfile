@@ -15,7 +15,7 @@ RUN  mkdir /tmp/kafka && \
     mkdir /kafka && cd /kafka && \
     tar -xvzf /tmp/kafka/kafka.tgz --strip 1
 
-RUN mkdir -p /data/kafka
+RUN mkdir -p /kafka/config /data/kafka
 
 COPY start-kafka.sh  /usr/bin
 
